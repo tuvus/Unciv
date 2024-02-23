@@ -169,6 +169,24 @@ class ThreatManager(val civInfo: Civilization) {
         return false
     }
 
+    /**
+     * Checks the tiles at [range] for owned and enemy units.
+     * Returns how many units of strength a side has.
+     * A positive value means we have more units, a negative value means they have more units.
+     * If there are no owned units this returns the number of enemy units
+     * Does not include air units
+     * @return how danagerous the situation is around a tile.
+     */
+    fun getCombatEvaluationAroundTile(tile: Tile, range: Int): Double {
+        val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }
+        val enemyUnits = getEnemyMilitaryUnitsInDistance(tile, range)
+        if (ourUnits.none()) return -enemyUnits.count().toDouble()
+        val enemyForce = enemyUnits.sumOf { it.getForceEvaluation() }
+        val ourForce = ourUnits.sumOf { it.getForceEvaluation() }
+        val averageUnitStrength = ourForce.toDouble() / ourUnits.count()
+        return (ourForce - enemyForce) / averageUnitStrength
+    }
+
     fun clear() {
         distanceToClosestEnemyTiles.clear()
     }
