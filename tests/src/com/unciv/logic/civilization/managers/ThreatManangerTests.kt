@@ -28,12 +28,12 @@ class ThreatManangerTests {
         civ.diplomacyFunctions.makeCivilizationsMeet(neutralCiv)
         civ.getDiplomacyManager(enemyCiv).declareWar()
     }
-    
+
     @After
     fun wrapUp() {
         DebugUtils.VISIBLE_MAP = false
     }
-    
+
     @Test
     fun `Distance to closest enemy with no enemies`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
@@ -51,7 +51,7 @@ class ThreatManangerTests {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5)).count())
     }
-    
+
     @Test
     fun `Find distance to enemy`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
@@ -164,7 +164,7 @@ class ThreatManangerTests {
         assertEquals(3, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 3)).count())
         assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 1)).count())
     }
-    
+
     @Test
     fun `Dangerous tiles`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
@@ -175,6 +175,57 @@ class ThreatManangerTests {
         assertEquals(null, testGame.getTile(Vector2(3f, 0f)).getTilesInDistance(1).firstOrNull {tile -> !dangerousTiles.contains(tile)})
         assertEquals(null, testGame.getTile(Vector2(-3f, 0f)).getTilesInDistance(2).firstOrNull {tile -> !dangerousTiles.contains(tile)})
     }
+
+    @Test
+    fun `Test CombatEvaluation No Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        assertEquals(0.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,3), 0.001)
+    }
+
+
+    @Test
+    fun `Test CombatEvaluation Owned Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(3f, 0f)))
+        testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(2f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        assertEquals(3.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,3), 0.001)
+    }
+
+    @Test
+    fun `Test CombatEvaluation Two Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        assertEquals(0.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+    }
+
+    @Test
+    fun `Test CombatEvaluation Only Enemy Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Warrior", enemyCiv, centerTile)
+        assertEquals(-2.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+    }
+
+    @Test
+    fun `Test CombatEvaluation More Enemy Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(-1f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        assertEquals(-1.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+    }
+
+    @Test
+    fun `Test CombatEvaluation More Friendly Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(-1f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        assertEquals(1.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+    }
+
 
 }
 
