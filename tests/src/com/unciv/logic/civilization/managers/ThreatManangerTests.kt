@@ -117,6 +117,13 @@ class ThreatManangerTests {
     }
 
     @Test
+    fun `Find tiles with enemy units center tile`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Warrior", enemyCiv, centerTile)
+        assertEquals(1, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 2).count())
+    }
+    
+    @Test
     fun `Find tiles with enemy units cache`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         assertEquals(5, threatManager.getDistanceToClosestEnemyUnit(centerTile, 5, false))

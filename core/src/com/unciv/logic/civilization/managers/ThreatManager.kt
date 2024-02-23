@@ -108,7 +108,7 @@ class ThreatManager(val civInfo: Civilization) {
 
 
         // Search all tiles that haven't been searched yet up until madDist
-        val minDistanceToSearch = (tileData?.distanceSearched?.coerceAtLeast(0) ?: 0) + 1
+        val minDistanceToSearch = (tileData?.distanceSearched?.coerceAtLeast(0) ?: 0)
 
         for (i in minDistanceToSearch..maxDist) {
             for (searchTile in tile.getTilesAtDistance(i)) {
