@@ -171,9 +171,9 @@ class ThreatManager(val civInfo: Civilization) {
 
     /**
      * Checks the tiles at [range] for owned and enemy units.
-     * Returns how many units of strength a side has.
+     * Returns how many units of force a side has more than the other.
      * A positive value means we have more units, a negative value means they have more units.
-     * If there are no owned units this returns the number of enemy units
+     * If there are no owned units this returns the number of enemy units.
      * Does not include air units
      * @return how danagerous the situation is around a tile.
      */
@@ -183,8 +183,10 @@ class ThreatManager(val civInfo: Civilization) {
         if (ourUnits.none()) return -enemyUnits.count().toDouble()
         val enemyForce = enemyUnits.sumOf { it.getForceEvaluation() }
         val ourForce = ourUnits.sumOf { it.getForceEvaluation() }
-        val averageUnitStrength = ourForce.toDouble() / ourUnits.count()
-        return (ourForce - enemyForce) / averageUnitStrength
+        // We use the max force of our units to determine how many units of force there is.
+        // Using our the average force would be quicker, but then adding more weak units would raise the return value 
+        val maxOurUnitForce = ourUnits.maxOf { it.getForceEvaluation() }
+        return (ourForce - enemyForce).toDouble() / maxOurUnitForce
     }
 
     fun clear() {
