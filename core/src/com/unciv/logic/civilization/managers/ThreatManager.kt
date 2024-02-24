@@ -128,7 +128,7 @@ class ThreatManager(val civInfo: Civilization) {
     }
 
     /**
-     * Returns all enemy military units within maxDistance of the tile.
+     * Returns all enemy military units or cities within maxDistance of the tile.
      */
     fun getEnemyMilitaryUnitsInDistance(tile: Tile, maxDist: Int): List<MapUnit> = 
         getEnemyUnitsOnTiles(getTilesWithEnemyUnitsInDistance(tile, maxDist))
@@ -177,16 +177,21 @@ class ThreatManager(val civInfo: Civilization) {
      * Does not include air units
      * @return how danagerous the situation is around a tile.
      */
-    fun getCombatEvaluationAroundTile(tile: Tile, range: Int): Double {
+    fun getUnitCombatEvaluationAroundTile(tile: Tile, range: Int, initialForce: Double = 0.0): Double {
         val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }
         val enemyUnits = getEnemyMilitaryUnitsInDistance(tile, range)
-        if (ourUnits.none()) return -enemyUnits.count().toDouble()
         val enemyForce = enemyUnits.sumOf { it.getForceEvaluation() }
+        if (ourUnits.none()) {
+            if (enemyUnits.none()) return initialForce
+            val maxEnemyUnitFoce = enemyUnits.maxOf { it.getForceEvaluation() }.toDouble()
+            return -(enemyForce / maxEnemyUnitFoce) + initialForce
+        } 
         val ourForce = ourUnits.sumOf { it.getForceEvaluation() }
+        val totalForce = initialForce + ourForce - enemyForce
         // We use the max force of our units to determine how many units of force there is.
         // Using our the average force would be quicker, but then adding more weak units would raise the return value 
         val maxOurUnitForce = ourUnits.maxOf { it.getForceEvaluation() }
-        return (ourForce - enemyForce).toDouble() / maxOurUnitForce
+        return totalForce.toDouble() / maxOurUnitForce
     }
 
     fun clear() {

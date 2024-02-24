@@ -180,7 +180,7 @@ class ThreatManangerTests {
     @Test
     fun `Test CombatEvaluation No Units`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
-        assertEquals(0.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,3), 0.001)
+        assertEquals(0.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,3), 0.001)
     }
 
 
@@ -190,7 +190,7 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(3f, 0f)))
         testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(2f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        assertEquals(3.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,3), 0.001)
+        assertEquals(3.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,3), 0.001)
     }
 
     @Test
@@ -198,7 +198,7 @@ class ThreatManangerTests {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        assertEquals(0.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+        assertEquals(0.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2), 0.001)
     }
 
     @Test
@@ -206,7 +206,7 @@ class ThreatManangerTests {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, centerTile)
-        assertEquals(-2.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+        assertEquals(-2.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2), 0.001)
     }
 
     @Test
@@ -215,7 +215,7 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(-1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        assertEquals(-1.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+        assertEquals(-1.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2), 0.001)
     }
 
     @Test
@@ -224,7 +224,7 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(-1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        assertEquals(1.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+        assertEquals(1.0, civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2), 0.001)
     }
     
     @Test
@@ -233,7 +233,7 @@ class ThreatManangerTests {
         testGame.addUnit("Pikeman", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(-1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        val combatEvaluation = civ.threatManager.getCombatEvaluationAroundTile(centerTile,2)
+        val combatEvaluation = civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2)
         assertTrue(combatEvaluation < 0)
     }
 
@@ -243,7 +243,7 @@ class ThreatManangerTests {
         testGame.addUnit("Pikeman", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
         testGame.addUnit("Pikeman", civ, testGame.getTile(Vector2(-1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
-        val combatEvaluation = civ.threatManager.getCombatEvaluationAroundTile(centerTile,2)
+        val combatEvaluation = civ.threatManager.getUnitCombatEvaluationAroundTile(centerTile,2)
         assertTrue(combatEvaluation > 0)
     }
 
