@@ -5,6 +5,7 @@ import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
 import com.unciv.utils.DebugUtils
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -224,6 +225,26 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(-1f, 0f)))
         testGame.addUnit("Warrior", civ, centerTile)
         assertEquals(1.0, civ.threatManager.getCombatEvaluationAroundTile(centerTile,2), 0.001)
+    }
+    
+    @Test
+    fun `Test CombatEvaluation Stronger Enemy`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Pikeman", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Warrior", civ, testGame.getTile(Vector2(-1f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        val combatEvaluation = civ.threatManager.getCombatEvaluationAroundTile(centerTile,2)
+        assertTrue(combatEvaluation < 0)
+    }
+
+    @Test
+    fun `Test CombatEvaluation Stronger Friendly Units`() {
+        val centerTile = testGame.getTile(Vector2(0f, 0f))
+        testGame.addUnit("Pikeman", enemyCiv, testGame.getTile(Vector2(1f, 0f)))
+        testGame.addUnit("Pikeman", civ, testGame.getTile(Vector2(-1f, 0f)))
+        testGame.addUnit("Warrior", civ, centerTile)
+        val combatEvaluation = civ.threatManager.getCombatEvaluationAroundTile(centerTile,2)
+        assertTrue(combatEvaluation > 0)
     }
 
 
