@@ -171,6 +171,19 @@ object BattleHelper {
         // Average should be around 2.5-5 early game and up to 35 for tanks in late game
         attackValue += (attackTile.movementLeftAfterMovingToAttackTile * 5).toInt()
 
+        if (!attacker.civ.isSpecialCiv()) return attackValue
+        if (attacker.baseUnit.isMelee()) {
+            val battleStatus = attacker.civ.threatManager.getUnitCombatEvaluationAroundTile(attackTile.tileToAttack, 2, 0.2)
+            if (battleStatus < -1) {
+                attackValue -= (battleStatus * 20).toInt()
+            }
+        } else if (attacker.baseUnit.isRanged()) {
+            val battleStatus = attacker.civ.threatManager.getUnitCombatEvaluationAroundTile(attackTile.tileToAttackFrom, 2, 0.5)
+            if (battleStatus < -1) {
+                attackValue -= (battleStatus * 15).toInt()
+            }
+        }
+
         return attackValue
     }
 }

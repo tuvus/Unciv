@@ -401,7 +401,7 @@ object NextTurnAutomation {
     }
 
 
-    private fun automateUnits(civInfo: Civilization) {
+    fun automateUnits(civInfo: Civilization) {
         val isAtWar = civInfo.isAtWar()
         val sortedUnits = civInfo.units.getCivUnits().sortedBy { unit -> getUnitPriority(unit, isAtWar) }
         for (unit in sortedUnits) UnitAutomation.automateUnitMoves(unit)
@@ -427,7 +427,7 @@ object NextTurnAutomation {
     }
 
     fun automateCityBombardment(civInfo: Civilization) {
-        for (city in civInfo.cities) UnitAutomation.tryBombardEnemy(city)
+//        for (city in civInfo.cities) UnitAutomation.tryBombardEnemy(city)
     }
 
     fun automateCities(civInfo: Civilization) {
@@ -458,6 +458,7 @@ object NextTurnAutomation {
     }
 
     private fun trainSettler(civInfo: Civilization) {
+        return
         val personality = civInfo.getPersonality()
         if (civInfo.isCityState()) return
         if (civInfo.isAtWar()) return // don't train settlers when you could be training troops.

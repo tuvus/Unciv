@@ -234,16 +234,16 @@ object DiplomacyAutomation {
     }
 
     internal fun declareWar(civInfo: Civilization) {
-        if (civInfo.wantsToFocusOn(Victory.Focus.Culture) &&
-            civInfo.getPersonality().isNeutralPersonality)
-            return
-        if (civInfo.cities.isEmpty() || civInfo.diplomacy.isEmpty()) return
-        if (civInfo.isAtWar() || civInfo.getHappiness() <= 0) return
-
-        val ourMilitaryUnits = civInfo.units.getCivUnits().filter { !it.isCivilian() }.count()
-        if (ourMilitaryUnits < civInfo.cities.size) return
-        if (ourMilitaryUnits < 4) return  // to stop AI declaring war at the beginning of games when everyone isn't set up well enough\
-        if (civInfo.cities.size < 3) return // FAR too early for that what are you thinking!
+//        if (civInfo.wantsToFocusOn(Victory.Focus.Culture) &&
+//            civInfo.getPersonality().isNeutralPersonality)
+//            return
+//        if (civInfo.cities.isEmpty() || civInfo.diplomacy.isEmpty()) return
+//        if (civInfo.isAtWar() || civInfo.getHappiness() <= 0) return
+//
+//        val ourMilitaryUnits = civInfo.units.getCivUnits().filter { !it.isCivilian() }.count()
+//        if (ourMilitaryUnits < civInfo.cities.size) return
+//        if (ourMilitaryUnits < 4) return  // to stop AI declaring war at the beginning of games when everyone isn't set up well enough\
+//        if (civInfo.cities.size < 3) return // FAR too early for that what are you thinking!
 
         //evaluate war
         val enemyCivs = civInfo.getKnownCivs()
@@ -256,12 +256,12 @@ object DiplomacyAutomation {
 
         if (enemyCivs.none()) return
 
-        val minMotivationToAttack = 20
+        val minMotivationToAttack = -2000
         // Attack the highest score enemy that we are willing to fight.
         // This is to help prevent civs from ganging up on smaller civs
         // and directs them to fight their competitors instead.
         val civWithBestMotivationToAttack = enemyCivs
-            .filter { hasAtLeastMotivationToAttack(civInfo, it, minMotivationToAttack) >= 20 }
+//            .filter { hasAtLeastMotivationToAttack(civInfo, it, minMotivationToAttack) >= 20 }
             .maxByOrNull { it.getStatForRanking(RankingType.Score) }
 
         if (civWithBestMotivationToAttack != null)
@@ -270,6 +270,7 @@ object DiplomacyAutomation {
 
 
     internal fun offerPeaceTreaty(civInfo: Civilization) {
+        return
         if (!civInfo.isAtWar() || civInfo.cities.isEmpty() || civInfo.diplomacy.isEmpty()) return
 
         val enemiesCiv = civInfo.diplomacy.filter { it.value.diplomaticStatus == DiplomaticStatus.War }

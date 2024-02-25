@@ -457,6 +457,7 @@ object UnitAutomation {
                 .filter {
                     unit.civ == it.civ &&
                             it.health < it.getMaxHealth() * 0.75
+                        || (it.civ.isSpecialCiv() && it.civ.threatManager.getUnitCombatEvaluationAroundCity(it, 3) < -1.0)
                 } //Weird health issues and making sure that not all forces move to good defenses
 
         if (siegedCities.any { it.getCenterTile().aerialDistanceTo(unit.getTile()) <= 2 })
@@ -579,12 +580,16 @@ object UnitAutomation {
     }
 
     private fun isCityThatNeedsDefendingInWartime(city: City): Boolean {
-        if (city.health < city.getMaxHealth()) return true // this city is under attack!
+        if (city.health <= city.getMaxHealth() / 2) return true // this city is under attack!
         for (enemyCivCity in city.civ.diplomacy.values
             .filter { it.diplomaticStatus == DiplomaticStatus.War }
-            .map { it.otherCiv() }.flatMap { it.cities })
-            if (city.getCenterTile().aerialDistanceTo(enemyCivCity.getCenterTile()) <= 5) return true // this is an edge city that needs defending
-        return false
+            .map { it.otherCiv() }.flatMap { it.cities }) {
+            if (city.getCenterTile().aerialDistanceTo(enemyCivCity.getCenterTile()) <= 5) 
+                return true // this is an edge city that needs defending
+        }
+        if (!city.civ.isSpecialCiv()) return false
+        // Check the area around to see if the city is threatend
+        return city.civ.threatManager.getUnitCombatEvaluationAroundCity(city,3) < -1.0
     }
 
     private fun tryStationingMeleeNavalUnit(unit: MapUnit): Boolean {

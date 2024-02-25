@@ -864,6 +864,10 @@ class Civilization : IsPartOfGameInfoSerialization {
         }
         oldCapital?.cityConstructions?.removeBuilding(oldCapital.capitalCityIndicator())
     }
+    
+    fun isSpecialCiv(): Boolean {
+        return civName == "Nation-10"
+    }
 
     fun moveCapitalToNextLargest(oldCapital: City?) {
         val availableCities = cities.filterNot { it.isCapital() }

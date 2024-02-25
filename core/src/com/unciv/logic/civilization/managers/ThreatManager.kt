@@ -1,5 +1,7 @@
 package com.unciv.logic.civilization.managers
 
+import com.unciv.logic.battle.CityCombatant
+import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -178,7 +180,7 @@ class ThreatManager(val civInfo: Civilization) {
      * @return how danagerous the situation is around a tile.
      */
     fun getUnitCombatEvaluationAroundTile(tile: Tile, range: Int, initialForce: Double = 0.0): Double {
-        val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }
+        val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }.toList()
         val enemyUnits = getEnemyMilitaryUnitsInDistance(tile, range)
         val enemyForce = enemyUnits.sumOf { it.getForceEvaluation() }
         if (ourUnits.none()) {
@@ -192,6 +194,10 @@ class ThreatManager(val civInfo: Civilization) {
         // Using our the average force would be quicker, but then adding more weak units would raise the return value 
         val maxOurUnitForce = ourUnits.maxOf { it.getForceEvaluation() }
         return totalForce.toDouble() / maxOurUnitForce
+    }
+
+    fun getUnitCombatEvaluationAroundCity(city: City, range: Int): Double {
+        return civInfo.threatManager.getUnitCombatEvaluationAroundTile(city.getCenterTile(),3, CityCombatant(city).getDefendingStrength().toDouble())
     }
 
     fun clear() {
