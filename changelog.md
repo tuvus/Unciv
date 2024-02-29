@@ -1,3 +1,69 @@
+## 4.10.14
+
+AI tile evaluation considers Faith
+
+Mods with no policy branches don't crash when clicking on culture icon
+
+Simplified blockade function
+
+Civ-wide uniques for city-wide resources
+
+Added conditional for exact amount of population in a city
+
+Suggest corrections for misspelt conditionals; Better text similarity for strings with errors at the start
+
+Only require explicit building/wonder costs for tech columns that have buildings/wonders with unspecified cost
+
+Added 'city addbuilding', 'city removebuilding' console commands
+
+Add unique to conditionally control construction costs
+
+getProductionCost can receive city - this will allow us to control city-specific production cost changes!
+
+RemoveIf -> RemoveAll to avoid jvm dependencies
+
+Fix links in mod file structure - 
+
+By SomeTroglodyte:
+- Unit upgrade menu can scroll 
+- Remove unnecessary/harmful `open` on classes without subclasses 
+- Type declaration colon blanks linting 
+- Some linting and readability helpers 
+
+Military unit healing improvement  - By tuvus
+
+## 4.10.13
+
+Add AI for land-based nuke units
+
+Keep opened mods open and at top of list when reloading mods in 'locate mod errors' tab
+
+above/below HP conditionals work outside of combat
+
+update uniques upon taking damage and other situations
+
+By SomeTroglodyte:
+- New notifications bell icon with actual count
+- Fix TabbedPager geometry - the cell for the close button needs to be ignored in the rest of the Table!
+
+Added ConditionalAboveHappiness unique - By PLynx01
+
+## 4.10.12
+
+Terraform unique triggerable from improvements
+
+By SomeTroglodyte:
+- Right-click/longpress for World screen city buttons
+- Fix some uses of "hidden from users" modifer
+- Fix fortified units upgraded to unfortifyable ones keeping fortification
+- Empire Overview Screen closing now with same UX as Civilopedia
+
+Added unit escorting formation!  - By tuvus
+
+Allow conditional timed triggers for unit actions &c  - By SeventhM
+
+Allow Barbarians to make set-up ranged units  - By SpacedOutChicken
+
 ## 4.10.11
 
 Terraforming unique! 'Turn this tile into a [terrainName] tile'
