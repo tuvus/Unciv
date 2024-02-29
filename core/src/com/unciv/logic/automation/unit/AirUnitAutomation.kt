@@ -15,7 +15,7 @@ object AirUnitAutomation {
     fun automateFighter(unit: MapUnit) {
         if (unit.health <= 50 && !unit.hasUnique(UniqueType.HealsEvenAfterAction)) return // Wait and heal
 
-        val tilesWithEnemyUnitsInRange = unit.civ.threatManager.getTilesWithEnemyUnitsInDistance(unit.getTile(), unit.getRange())
+        val tilesWithEnemyUnitsInRange = unit.civ.threatManager.getTilesWithEnemyThreatInDistance(unit.getTile(), unit.getRange())
         // TODO: Optimize [friendlyAirUnitsInRange] by creating an alternate [ThreatManager.getTilesWithEnemyUnitsInDistance] that handles only friendly units
         val friendlyAirUnitsInRange = unit.getTile().getTilesInDistance(unit.getRange()).flatMap { it.airUnits }.filter { it.civ == unit.civ }
         // Find all visible enemy air units

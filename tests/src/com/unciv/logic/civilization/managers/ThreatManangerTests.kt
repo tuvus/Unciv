@@ -44,13 +44,13 @@ class ThreatManangerTests {
     @Test
     fun `Find tiles with enemies with no enemies`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
-        assertEquals(0, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
+        assertEquals(0, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
     }
 
     @Test
     fun `Find enemies on tiles with no enemies`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
-        assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5)).count())
+        assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5)).count())
     }
 
     @Test
@@ -113,15 +113,15 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(3f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(2f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(4f, 0f)))
-        assertEquals(3, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
-        assertEquals(2, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 3).count())
+        assertEquals(3, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
+        assertEquals(2, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 3).count())
     }
 
     @Test
     fun `Find tiles with enemy units center tile`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         testGame.addUnit("Warrior", enemyCiv, centerTile)
-        assertEquals(1, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 2).count())
+        assertEquals(1, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 2).count())
     }
     
     @Test
@@ -133,22 +133,22 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(3f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(2f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(4f, 0f)))
-        assertEquals(0, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
-        assertEquals(0, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 3).count())
+        assertEquals(0, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
+        assertEquals(0, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 3).count())
 
         // Now it might be another turn, so it is allowed
         threatManager.clear()
-        assertEquals(3, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
-        assertEquals(2, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 3).count())
+        assertEquals(3, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
+        assertEquals(2, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 3).count())
     }
 
     @Test
     fun `Find distance to enemy after find tiles with enemy units`() {
         val centerTile = testGame.getTile(Vector2(0f, 0f))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(3f, 0f)))
-        assertEquals(1, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
+        assertEquals(1, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(2f, 0f)))
-        assertEquals(1, threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5).count())
+        assertEquals(1, threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5).count())
     }
 
 
@@ -161,9 +161,9 @@ class ThreatManangerTests {
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(2f, 0f)))
         testGame.addUnit("Warrior", enemyCiv, testGame.getTile(Vector2(4f, 0f)))
         testGame.addUnit("Warrior", neutralCiv, testGame.getTile(Vector2(-3f, -3f)))
-        assertEquals(4, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 5)).count())
-        assertEquals(3, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 3)).count())
-        assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyUnitsInDistance(centerTile, 1)).count())
+        assertEquals(4, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyThreatInDistance(centerTile, 5)).count())
+        assertEquals(3, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyThreatInDistance(centerTile, 3)).count())
+        assertEquals(0, threatManager.getEnemyUnitsOnTiles(threatManager.getTilesWithEnemyThreatInDistance(centerTile, 1)).count())
     }
 
     @Test

@@ -280,7 +280,7 @@ object UnitAutomation {
         return true
     }
 
-    private fun trySwapRetreat(unit: MapUnit): Boolean {
+    fun trySwapRetreat(unit: MapUnit): Boolean {
         if (!unit.civ.isAtWar()) return false
         // Precondition: This must be a military unit
         if (unit.isCivilian()) return false

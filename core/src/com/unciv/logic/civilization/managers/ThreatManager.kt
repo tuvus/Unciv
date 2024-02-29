@@ -1,5 +1,6 @@
 package com.unciv.logic.civilization.managers
 
+import com.unciv.logic.city.City
 import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.Tile
@@ -38,7 +39,7 @@ class ThreatManager(val civInfo: Civilization) {
             // Check the tiles where we have previously found an enemy, if so it must be the closest
             while (tilesWithEnemies.isNotEmpty()) {
                 val enemyTile = tilesWithEnemies.first()
-                if (doesTileHaveMilitaryEnemy(enemyTile.first)) {
+                if (doesTileHaveEnemyThreat(enemyTile.first)) {
                     return if (takeLargerValues) enemyTile.second
                     else enemyTile.second.coerceAtMost(maxDist)
                 } else {
@@ -62,7 +63,7 @@ class ThreatManager(val civInfo: Civilization) {
         // Search for nearby enemies and store the results
         for (i in minDistanceToSearch..maxDist) {
             for (searchTile in tile.getTilesAtDistance(i)) {
-                if (doesTileHaveMilitaryEnemy(searchTile)) {
+                if (doesTileHaveEnemyThreat(searchTile)) {
                     tilesWithEnemyAtDistance.add(Pair(searchTile, i))
                 }
             }
@@ -81,7 +82,7 @@ class ThreatManager(val civInfo: Civilization) {
      * May be quicker than a manual search because of caching.
      * Also ends up calculating and caching [getDistanceToClosestEnemyUnit].
      */
-    fun getTilesWithEnemyUnitsInDistance(tile: Tile, maxDist: Int): MutableList<Tile> {
+    fun getTilesWithEnemyThreatInDistance(tile: Tile, maxDist: Int): MutableList<Tile> {
         val tileData = distanceToClosestEnemyTiles[tile]
 
         // The list of tiles that we will return
@@ -96,7 +97,7 @@ class ThreatManager(val civInfo: Civilization) {
                 // Check if the next tile is out of our search range, if so lets stop here
                 if (tileWithDistance.second > maxDist) return tilesWithEnemies
                 // Check if the threat on the tile is still present
-                if (doesTileHaveMilitaryEnemy(tileWithDistance.first))
+                if (doesTileHaveEnemyThreat(tileWithDistance.first))
                     tilesWithEnemies.add(tileWithDistance.first)
                 else tilesWithEnemiesIterator.remove()
             }
@@ -112,7 +113,7 @@ class ThreatManager(val civInfo: Civilization) {
 
         for (i in minDistanceToSearch..maxDist) {
             for (searchTile in tile.getTilesAtDistance(i)) {
-                if (doesTileHaveMilitaryEnemy(searchTile)) {
+                if (doesTileHaveEnemyThreat(searchTile)) {
                     tilesWithEnemies.add(searchTile)
                     tileDataTilesWithEnemies.add(Pair(searchTile, i))
                 }
@@ -131,15 +132,18 @@ class ThreatManager(val civInfo: Civilization) {
      * Returns all enemy military units or cities within maxDistance of the tile.
      */
     fun getEnemyMilitaryUnitsInDistance(tile: Tile, maxDist: Int): List<MapUnit> = 
-        getEnemyUnitsOnTiles(getTilesWithEnemyUnitsInDistance(tile, maxDist))
+        getEnemyUnitsOnTiles(getTilesWithEnemyThreatInDistance(tile, maxDist))
 
-    fun getEnemyUnitsOnTiles(tilesWithEnemyUnitsInDistance:List<Tile>): List<MapUnit> =
-        tilesWithEnemyUnitsInDistance.flatMap { enemyTile -> enemyTile.getUnits()
+    fun getEnemyUnitsOnTiles(tilesWithEnemyThreatInDistance:List<Tile>): List<MapUnit> =
+        tilesWithEnemyThreatInDistance.flatMap { enemyTile -> enemyTile.getUnits()
             .filter { it.isMilitary() && civInfo.isAtWarWith(it.civ) } }
+    
+    fun getEnemyCitiesOnTiles(tilesWithEnemyThreatInDistance:List<Tile>): List<City> = 
+        tilesWithEnemyThreatInDistance.filter { doesTileHaveEnemyCity(it) }.map { it.getCity()!! }
 
     
     fun getDangerousTiles(unit: MapUnit, distance: Int = 3): HashSet<Tile> {
-        val tilesWithEnemyUnits = getTilesWithEnemyUnitsInDistance(unit.getTile(), distance)
+        val tilesWithEnemyUnits = getTilesWithEnemyThreatInDistance(unit.getTile(), distance)
         val nearbyRangedEnemyUnits = getEnemyUnitsOnTiles(tilesWithEnemyUnits)
 
         val tilesInRangeOfAttack = nearbyRangedEnemyUnits
@@ -156,9 +160,9 @@ class ThreatManager(val civInfo: Civilization) {
     }
 
     /**
-     * Returns true if the tile has a visible enemy, otherwise returns false.
+     * @return true if the tile has a visible enemy, otherwise returns false.
      */
-    fun doesTileHaveMilitaryEnemy(tile: Tile): Boolean {
+    fun doesTileHaveEnemyThreat(tile: Tile): Boolean {
         if (!tile.isExplored(civInfo)) return false
         if (tile.isCityCenter() && tile.getCity()!!.civ.isAtWarWith(civInfo)) return true
         if (!tile.isVisible(civInfo)) return false
@@ -167,6 +171,16 @@ class ThreatManager(val civInfo: Civilization) {
             && !it.isInvisible(civInfo) })
             return true
         return false
+    }
+
+    fun doesTileHaveEnemyMilitaryUnit(tile: Tile): Boolean {
+        if (tile.militaryUnit == null) return false
+        return tile.militaryUnit!!.civ.isAtWarWith(civInfo)
+    }
+    
+    fun doesTileHaveEnemyCity(tile: Tile): Boolean {
+        if (tile.getCity() == null) return false
+        return tile.getCity()!!.civ.isAtWarWith(civInfo)
     }
 
     /**
@@ -178,20 +192,24 @@ class ThreatManager(val civInfo: Civilization) {
      * @return how danagerous the situation is around a tile.
      */
     fun getUnitCombatEvaluationAroundTile(tile: Tile, range: Int, initialForce: Double = 0.0): Double {
-        val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }
+        val ourUnits = tile.getTilesInDistance(range).mapNotNull { it.militaryUnit }.filter { it.civ == civInfo }.toList()
         val enemyUnits = getEnemyMilitaryUnitsInDistance(tile, range)
+        return getCombatEvaluation(ourUnits, enemyUnits, initialForce)
+    }
+
+    fun getCombatEvaluation(ourUnits: List<MapUnit>, enemyUnits: List<MapUnit>, initialForce: Double = 0.0): Double {
         val enemyForce = enemyUnits.sumOf { it.getForceEvaluation() }
         if (ourUnits.none()) {
             if (enemyUnits.none()) return initialForce
             val maxEnemyUnitFoce = enemyUnits.maxOf { it.getForceEvaluation() }.toDouble()
             return -(enemyForce / maxEnemyUnitFoce) + initialForce
-        } 
+        }
         val ourForce = ourUnits.sumOf { it.getForceEvaluation() }
         val totalForce = initialForce + ourForce - enemyForce
         // We use the max force of our units to determine how many units of force there is.
         // Using our the average force would be quicker, but then adding more weak units would raise the return value 
         val maxOurUnitForce = ourUnits.maxOf { it.getForceEvaluation() }
-        return totalForce.toDouble() / maxOurUnitForce
+        return totalForce / maxOurUnitForce
     }
 
     fun clear() {

@@ -135,7 +135,7 @@ object CivilianUnitAutomation {
         // This is a little 'Bugblatter Beast of Traal': Run if we can attack an enemy
         // Cheaper than determining which enemies could attack us next turn
         val enemyUnitsInWalkingDistance = unit.movement.getDistanceToTiles().keys
-            .filter { unit.civ.threatManager.doesTileHaveMilitaryEnemy(it) }
+            .filter { unit.civ.threatManager.doesTileHaveEnemyThreat(it) }
 
         if (enemyUnitsInWalkingDistance.isNotEmpty() && !unit.baseUnit.isMilitary()
             && unit.getTile().militaryUnit == null && !unit.getTile().isCityCenter()) {
