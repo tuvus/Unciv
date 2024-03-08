@@ -26,13 +26,14 @@ class Army(civInfo: Civilization, armyOrigin: Tile, unitDistance: Int) {
         this.civInfo = civInfo
         this.unitDistance = unitDistance
         generateArmyFromPosition(armyOrigin)
-        centerTile = findArmyCenter()
+        centerTile = if (ownedMilitaryUnits.isNotEmpty()) findArmyCenter()
+        else armyOrigin
         closestCity = civInfo.cities.minByOrNull { centerTile.aerialDistanceTo(it.getCenterTile()) }
         findEnemyThreats()
         evaluateCombat()
     }
 
-    fun generateArmyFromPosition(origin: Tile) {
+    private fun generateArmyFromPosition(origin: Tile) {
         fun getNearbyAlliedUnits(tile: Tile): Sequence<MapUnit> =
             tile.getTilesInDistance(unitDistance).filter {
                 it.militaryUnit != null
@@ -60,7 +61,7 @@ class Army(civInfo: Civilization, armyOrigin: Tile, unitDistance: Int) {
         val averageY = totalY / ownedMilitaryUnits.count()
         return civInfo.gameInfo.tileMap[averageX.roundToInt(), averageY.roundToInt()]
     }
-    
+
     fun findEnemyThreats() {
         for (ownedUnit in ownedMilitaryUnits) {
             val tilesWithEnemies = civInfo.threatManager.getTilesWithEnemyThreatInDistance(
