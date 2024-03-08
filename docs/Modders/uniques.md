@@ -159,6 +159,12 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Triggerable
 
+??? example  "Suppress warning [validationWarning]"
+	Allows suppressing specific validation warnings. Errors, deprecation warnings, or warnings about untyped and non-filtering uniques should be heeded, not suppressed, and are therefore not accepted. Note that this can be used in ModOptions, in the uniques a warning is about, or as modifier on the unique triggering a warning - but you still need to be specific. Even in the modifier case you will need to specify a sufficiently selective portion of the warning text as parameter.
+	Example: "Suppress warning [Tinman is supposed to automatically upgrade at tech Clockwork, and therefore Servos for its upgrade Mecha may not yet be researched! -or- *is supposed to automatically upgrade*]"
+
+	Applicable to: Triggerable, Terrain, Speed, ModOptions, MetaModifier
+
 ## UnitTriggerable uniques
 !!! note ""
 
@@ -221,6 +227,7 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Global, FollowerBelief
 
 ??? example  "[stats] per [amount] social policies adopted"
+	Only works for civ-wide stats
 	Example: "[+1 Gold, +2 Production] per [3] social policies adopted"
 
 	Applicable to: Global
@@ -942,13 +949,13 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Nation, Terrain, Improvement, Resource
 
 ??? example  "Will not be displayed in Civilopedia"
-	Applicable to: Nation, Tech, Policy, FollowerBelief, Building, Unit, UnitType, Promotion, Terrain, Improvement, Resource, Ruins, Speed
+	Applicable to: Nation, Tech, Policy, FounderBelief, FollowerBelief, Building, Unit, UnitType, Promotion, Terrain, Improvement, Resource, Ruins, Speed
 
 ??? example  "Comment [comment]"
 	Allows displaying arbitrary text in a Unique listing. Only the text within the '[]' brackets will be displayed, the rest serves to allow Ruleset validation to recognize the intent.
 	Example: "Comment [comment]"
 
-	Applicable to: Nation, Tech, Policy, FollowerBelief, Building, Unit, UnitType, Promotion, Terrain, Improvement, Resource, Ruins, Speed
+	Applicable to: Nation, Tech, Policy, FounderBelief, FollowerBelief, Building, Unit, UnitType, Promotion, Terrain, Improvement, Resource, Ruins, Speed
 
 ## Personality uniques
 ??? example  "Will not build [baseUnitFilter/buildingFilter]"
@@ -1118,6 +1125,9 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 	Applicable to: Building, Improvement, Resource
 
 ??? example  "Indicates the capital city"
+	Applicable to: Building
+
+??? example  "Moves to new capital when capital changes"
 	Applicable to: Building
 
 ??? example  "Provides 1 extra copy of each improved luxury resource near this City"
@@ -2039,6 +2049,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Conditional
 
+??? example  "&lt;when between [amount] and [amount] [stat/resource]&gt;"
+	Example: "&lt;when between [3] and [3] [Culture]&gt;"
+
+	Applicable to: Conditional
+
 ??? example  "&lt;when above [amount] [stat/resource] (modified by game speed)&gt;"
 	Example: "&lt;when above [3] [Culture] (modified by game speed)&gt;"
 
@@ -2046,6 +2061,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 ??? example  "&lt;when below [amount] [stat/resource] (modified by game speed)&gt;"
 	Example: "&lt;when below [3] [Culture] (modified by game speed)&gt;"
+
+	Applicable to: Conditional
+
+??? example  "&lt;when between [amount] and [amount] [stat/resource] (modified by game speed)&gt;"
+	Example: "&lt;when between [3] and [3] [Culture] (modified by game speed)&gt;"
 
 	Applicable to: Conditional
 
@@ -2208,8 +2228,8 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
     Special conditionals that can be added to Triggerable uniques, to make them activate upon specific actions.
 
-??? example  "&lt;upon discovering [tech]&gt;"
-	Example: "&lt;upon discovering [Agriculture]&gt;"
+??? example  "&lt;upon discovering [techFilter] technology&gt;"
+	Example: "&lt;upon discovering [Agriculture] technology&gt;"
 
 	Applicable to: TriggerCondition
 
@@ -2369,4 +2389,5 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 *[stockpiledResource]: The name of any stockpiled.
 *[tech]: The name of any tech.
 *[tileFilter]: Anything that can be used either in an improvementFilter or in a terrainFilter can be used here, plus 'unimproved'
+*[validationWarning]: Suppresses one specific Ruleset validation warning. This can specify the full text verbatim including correct upper/lower case, or it can be a wildcard case-insensitive simple pattern starting and ending in an asterisk ('*'). If the suppression unique is used within an object or as modifier (not ModOptions), the wildcard symbols can be omitted, as selectivity is better due to the limited scope.
 *[victoryType]: The name of any victory type: 'Neutral', 'Cultural', 'Diplomatic', 'Domination', 'Scientific', 'Time'

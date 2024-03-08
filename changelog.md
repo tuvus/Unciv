@@ -1,34 +1,52 @@
+## 4.10.16
+
+Allow multifilter uniques to count for filtering
+
+By tuvus:
+- Skip next unit button (right-click option)
+- Better Unit Actions Sorting
+
+By SomeTroglodyte:
+- City filters for cities in resistance and being razed
+- Competition quests in progress display tied leaders (and your place if you're behind)
+
+AI consider production bonuses when building  - By SeventhM
+
+Added ConditionalWhenBetweenStatResource unique  - By woo1127 (new contributor!)
+
+## 4.10.15
+
+Changed tech trigger to accept tech filters
+
+By SomeTroglodyte:
+- Improve DiplomacyScreen UX (nation icons) on cramped screens
+- Move DiplomacyScreen close button to top right
+- Validation warning Suppression as Unique or modifier
+- UI: Fix options popup "spilling" in cramped screen conditions
+
+Allow city state uniques for nation descriptions  - By SeventhM
+
+Add MovedToNewCapital buiding unique  - By PLynx01
+
+Better military unit retreat  - By tuvus
+
 ## 4.10.14
 
 AI tile evaluation considers Faith
 
-Mods with no policy branches don't crash when clicking on culture icon
-
-Simplified blockade function
-
 Civ-wide uniques for city-wide resources
-
-Added conditional for exact amount of population in a city
-
-Suggest corrections for misspelt conditionals; Better text similarity for strings with errors at the start
-
-Only require explicit building/wonder costs for tech columns that have buildings/wonders with unspecified cost
 
 Added 'city addbuilding', 'city removebuilding' console commands
 
 Add unique to conditionally control construction costs
 
-getProductionCost can receive city - this will allow us to control city-specific production cost changes!
+Added conditional for exact amount of population in a city
 
-RemoveIf -> RemoveAll to avoid jvm dependencies
+Mod checker:
+- Unique conditional corrections, and better correction
+- Limit tech column building/wonder costs warnings to when required
 
-Fix links in mod file structure - 
-
-By SomeTroglodyte:
-- Unit upgrade menu can scroll 
-- Remove unnecessary/harmful `open` on classes without subclasses 
-- Type declaration colon blanks linting 
-- Some linting and readability helpers 
+Unit upgrade menu can scroll - By SomeTroglodyte
 
 Military unit healing improvement  - By tuvus
 
