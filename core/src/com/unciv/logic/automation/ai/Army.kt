@@ -96,17 +96,33 @@ class Army(civInfo: Civilization, armyOrigin: Tile, unitDistance: Int) {
         // reaches -1 when there are 9 or more enemy units nearby and reacher 1 when we have more than 9 units nearby.
         // reaches .5 when we have 2 more units 
         val stance = if (combatEvaluation >= 0) log10(combatEvaluation + 1) else -log10(-combatEvaluation + 1)
+        val unusedUnits = ownedMilitaryUnits.toMutableSet()
+        val partialyUsedUnits = mutableSetOf<MapUnit>()
+        val usedUnits = mutableSetOf<MapUnit>()
+        
+        fun doUnitAction(unit:MapUnit, action: ((unit:MapUnit) -> Unit)) {
+            if (unit in usedUnits) return
+            action(unit)
+            
+            if (unit.currentMovement == 0f) {
+            }
+            
+        }
 
         // Scout
         // Retreat and heal units
         val unitsByHealth = ownedMilitaryUnits.sortedBy { it.health }
         for (unit in unitsByHealth) {
             if (unit.health < 50 * (20 * -stance)) {
-                UnitAutomation.trySwapRetreat(unit)
+                UnitAutomation.tryRetreat(unit)
             }
         }
         // Fortify
+
         // Attack
+        for (unit in unitsByHealth) {
+            doUnitAction(unit) { UnitAutomation.tryAttacking(unit) }
+        }
     }
 }
 

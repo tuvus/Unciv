@@ -259,7 +259,7 @@ object UnitAutomation {
 
 
     /** @return true only if the unit has 0 movement left */
-    private fun tryAttacking(unit: MapUnit): Boolean {
+    fun tryAttacking(unit: MapUnit): Boolean {
         repeat(unit.maxAttacksPerTurn() - unit.attacksThisTurn) {
             if (BattleHelper.tryAttackNearbyEnemy(unit)) return true
             // Calvary style tctic, attack and then retreat
