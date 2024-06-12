@@ -1,5 +1,6 @@
 package com.unciv.logic.map
 
+import com.unciv.logic.civilization.Civilization
 import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.RoadStatus
 import com.unciv.logic.map.tile.Tile
@@ -16,28 +17,23 @@ object MapPathing {
     private fun roadPreferredMovementCost(unit: MapUnit, from: Tile, to: Tile): Float{
         // hasRoadConnection accounts for civs that treat jungle/forest as roads
         // Ignore road over river penalties.
-        val areConnectedByRoad = from.hasRoadConnection(unit.civ, mustBeUnpillaged = false) && to.hasRoadConnection(unit.civ, mustBeUnpillaged = false)
-        if (areConnectedByRoad){
-            // If the civ has railroad technology, consider roads as railroads since they will be upgraded
-            if (unit.civ.tech.getBestRoadAvailable() == RoadStatus.Railroad){
-                return RoadStatus.Railroad.movement
-            }else{
-                return unit.civ.tech.movementSpeedOnRoads
-            }
-        }
-
-        val areConnectedByRailroad = from.hasRailroadConnection(mustBeUnpillaged = false) && to.hasRailroadConnection(mustBeUnpillaged = false)
-        if (areConnectedByRailroad)
-            return RoadStatus.Railroad.movement
+        if ((to.hasRoadConnection(unit.civ, false) || to.hasRailroadConnection(false)))
+            return .5f
 
         return 1f
     }
 
     fun isValidRoadPathTile(unit: MapUnit, tile: Tile): Boolean {
+        val roadImprovement = tile.ruleset.roadImprovement ?: return false
+        val railRoadImprovement = tile.ruleset.railroadImprovement ?: return false
         return tile.isLand
             && !tile.isImpassible()
             && unit.civ.hasExplored(tile)
             && tile.canCivPassThrough(unit.civ)
+            && (tile.hasRoadConnection(unit.civ, false) 
+                || tile.hasRailroadConnection(false) 
+                || tile.improvementFunctions.canBuildImprovement(roadImprovement, unit.civ))
+                || tile.improvementFunctions.canBuildImprovement(railRoadImprovement, unit.civ)
     }
 
     /**
@@ -88,7 +84,7 @@ object MapPathing {
         while (true) {
             if (astar.hasEnded()) {
                 // We failed to find a path
-                Log.debug("getRoadPath failed at AStar search size ${astar.size()}")
+                Log.debug("getPath failed at AStar search size ${astar.size()}")
                 return null
             }
             if (!astar.hasReachedTile(endTile)) {
@@ -102,6 +98,35 @@ object MapPathing {
         }
     }
 
+    /**
+     * Gets the connection to the end tile. This does not take into account tile movement costs.
+     * Takes in a civilization instead of a specific unit.
+     */
+    fun getConnection(civ: Civilization, 
+        startTile: Tile,
+        endTile: Tile,
+        predicate: (Civilization, Tile) -> Boolean
+    ): List<Tile>? {
+        val astar = AStar(
+                startTile,
+                { tile -> predicate(civ, tile) },
+                { from, to -> 1f },
+                { from, to -> from.aerialDistanceTo(to).toFloat() }
+        )
+        while (true) {
+            if (astar.hasEnded()) {
+                // We failed to find a path
+                Log.debug("getConnection failed at AStar search size ${astar.size()}")
+                return null
+            }
+            if (!astar.hasReachedTile(endTile)) {
+                astar.nextStep()
+                continue
+            }
+            // Found a path.
+            return astar.getPathTo(endTile)
+                    .toList()
+                    .reversed()
+        }
+    }
 }
-
-

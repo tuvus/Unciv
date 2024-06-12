@@ -162,10 +162,10 @@ class NaturalWonderGenerator(val ruleset: Ruleset, val randomness: MapGeneration
                 list.add(candidates.random(randomness.RNG))
             }
             if (list.size >= minGroupSize) {
-                list.forEach {
-                    placeNaturalWonder(wonder, location)
+                for (tileToConvert in list) {
+                    placeNaturalWonder(wonder, tileToConvert)
                     // Add all tiles within a certain distance to a blacklist so NW:s don't cluster
-                    blockedTiles.addAll(it.getTilesInDistance(it.tileMap.mapParameters.mapSize.height / 5))
+                    blockedTiles.addAll(tileToConvert.getTilesInDistance(tileToConvert.tileMap.mapParameters.mapSize.height / 5))
                 }
 
                 debug("Natural Wonder %s @%s", wonder.name, location.position)
@@ -216,7 +216,7 @@ class NaturalWonderGenerator(val ruleset: Ruleset, val randomness: MapGeneration
         private fun clearTile(tile: Tile) {
             tile.setTerrainFeatures(listOf())
             tile.resource = null
-            tile.removeImprovement()
+            tile.improvement = null
             tile.setTerrainTransients()
         }
     }

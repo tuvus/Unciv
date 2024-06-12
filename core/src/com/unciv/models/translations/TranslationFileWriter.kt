@@ -10,6 +10,7 @@ import com.unciv.models.metadata.BaseRuleset
 import com.unciv.models.metadata.GameSettings.LocaleCode
 import com.unciv.models.ruleset.Belief
 import com.unciv.models.ruleset.Building
+import com.unciv.models.ruleset.Event
 import com.unciv.models.ruleset.GlobalUniques
 import com.unciv.models.ruleset.PolicyBranch
 import com.unciv.models.ruleset.Quest
@@ -315,8 +316,7 @@ object TranslationFileWriter {
                 val filename = jsonFile.nameWithoutExtension()
 
                 val javaClass = getJavaClassByName(filename)
-                if (javaClass == this.javaClass)
-                    continue // unknown JSON, let's skip it
+                    ?: continue // unknown JSON, let's skip it
 
                 val array = json().fromJsonFile(javaClass, jsonFile.path())
 
@@ -428,7 +428,7 @@ object TranslationFileWriter {
                     // Promotion names are not uniques but since we did the "[unitName] ability"
                     // they need the "parameters" treatment too
                     // Same for victory milestones
-                    (field.name == "uniques" || field.name == "promotions" || field.name == "milestones")
+                    (field.name in fieldsToProcessParameters)
                             && (fieldValue is java.util.AbstractCollection<*>) ->
                         for (item in fieldValue)
                             if (item is String) submitString(item, Unique(item)) else serializeElement(item!!)
@@ -464,6 +464,8 @@ object TranslationFileWriter {
                 "RuinReward.uniques", "TerrainType.name",
                 "CityStateType.friendBonusUniques", "CityStateType.allyBonusUniques",
                 "Era.citySound",
+                "keyShortcut",
+                "Event.name" // Presently not shown anywhere
             )
 
             /** Specifies Enums where the name property _is_ translatable, by Class name */
@@ -474,6 +476,11 @@ object TranslationFileWriter {
             private val translatableUniqueParameterTypes = setOf(
                 UniqueParameterType.Unknown,
                 UniqueParameterType.Comment
+            )
+
+            private val fieldsToProcessParameters = setOf(
+                "uniques", "promotions", "milestones",
+                "triggeredUniques", "conditions"
             )
 
             private fun isFieldTypeRelevant(type: Class<*>) =
@@ -496,13 +503,14 @@ object TranslationFileWriter {
                         (clazz.componentType?.simpleName ?: clazz.simpleName) + "." + field.name !in untranslatableFieldSet
             }
 
-            private fun getJavaClassByName(name: String): Class<Any> {
+            private fun getJavaClassByName(name: String): Class<Any>? {
                 return when (name) {
                     "Beliefs" -> emptyArray<Belief>().javaClass
                     "Buildings" -> emptyArray<Building>().javaClass
+                    "CityStateTypes" -> emptyArray<CityStateType>().javaClass
                     "Difficulties" -> emptyArray<Difficulty>().javaClass
                     "Eras" -> emptyArray<Era>().javaClass
-                    "Speeds" -> emptyArray<Speed>().javaClass
+                    "Events" -> emptyArray<Event>().javaClass
                     "GlobalUniques" -> GlobalUniques().javaClass
                     "Nations" -> emptyArray<Nation>().javaClass
                     "Policies" -> emptyArray<PolicyBranch>().javaClass
@@ -510,6 +518,7 @@ object TranslationFileWriter {
                     "Religions" -> emptyArray<String>().javaClass
                     "Ruins" -> emptyArray<RuinReward>().javaClass
                     "Specialists" -> emptyArray<Specialist>().javaClass
+                    "Speeds" -> emptyArray<Speed>().javaClass
                     "Techs" -> emptyArray<TechColumn>().javaClass
                     "Terrains" -> emptyArray<Terrain>().javaClass
                     "TileImprovements" -> emptyArray<TileImprovement>().javaClass
@@ -519,8 +528,7 @@ object TranslationFileWriter {
                     "Units" -> emptyArray<BaseUnit>().javaClass
                     "UnitTypes" -> emptyArray<UnitType>().javaClass
                     "VictoryTypes" -> emptyArray<Victory>().javaClass
-                    "CityStateTypes" -> emptyArray<CityStateType>().javaClass
-                    else -> this.javaClass // dummy value
+                    else -> null // dummy value
                 }
             }
         }

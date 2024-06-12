@@ -18,7 +18,7 @@ import com.unciv.models.ruleset.tile.TerrainType
 import com.unciv.models.ruleset.unique.Unique
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.screens.mapeditorscreen.MapGeneratorSteps
-import com.unciv.ui.screens.mapeditorscreen.TileInfoNormalizer
+import com.unciv.logic.map.tile.TileNormalizer
 import com.unciv.utils.debug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
@@ -175,7 +175,7 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
 
         // Map generation may generate incompatible terrain/feature combinations
         for (tile in map.values)
-            TileInfoNormalizer.normalizeToRuleset(tile, ruleset)
+            TileNormalizer.normalizeToRuleset(tile, ruleset)
 
         return map
     }
@@ -220,20 +220,23 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
         debug("MapGenerator.%s took %s.%sms", text, delta/1000000L, (delta/10000L).rem(100))
     }
 
-    fun convertTerrains(tiles: Iterable<Tile>) {
-        for (tile in tiles) {
-            val conversionUnique =
-                tile.getBaseTerrain().getMatchingUniques(UniqueType.ChangesTerrain)
-                    .firstOrNull { tile.isAdjacentTo(it.params[1]) }
-                    ?: continue
-            val terrain = ruleset.terrains[conversionUnique.params[0]] ?: continue
+    fun convertTerrains(tiles: Iterable<Tile>) = Helpers.convertTerrains(ruleset, tiles)
+    object Helpers {
+        fun convertTerrains(ruleset: Ruleset, tiles: Iterable<Tile>) {
+            for (tile in tiles) {
+                val conversionUnique =
+                    tile.getBaseTerrain().getMatchingUniques(UniqueType.ChangesTerrain)
+                        .firstOrNull { tile.isAdjacentTo(it.params[1]) }
+                        ?: continue
+                val terrain = ruleset.terrains[conversionUnique.params[0]] ?: continue
 
-            if (terrain.type == TerrainType.TerrainFeature) {
-                if (!terrain.occursOn.contains(tile.lastTerrain.name)) continue
-                tile.addTerrainFeature(terrain.name)
-            } else
-                tile.baseTerrain = terrain.name
-            tile.setTerrainTransients()
+                if (terrain.type != TerrainType.TerrainFeature)
+                    tile.baseTerrain = terrain.name
+                else if (!terrain.occursOn.contains(tile.lastTerrain.name)) continue
+                else
+                    tile.addTerrainFeature(terrain.name)
+                tile.setTerrainTransients()
+            }
         }
     }
 
@@ -315,7 +318,7 @@ class MapGenerator(val ruleset: Ruleset, private val coroutineScope: CoroutineSc
                 suitableTiles,
                 map.mapParameters.mapSize.radius)
         for (tile in locations)
-            tile.changeImprovement(ruinsEquivalents.keys.random())
+            tile.improvement = ruinsEquivalents.keys.random()
     }
 
     private fun spreadResources(tileMap: TileMap) {

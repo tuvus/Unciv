@@ -16,10 +16,9 @@ import com.unciv.ui.components.fonts.Fonts
 import com.unciv.ui.components.input.KeyboardBinding
 import com.unciv.ui.components.input.onActivation
 import com.unciv.ui.components.input.onClick
+import com.unciv.ui.components.input.onRightClick
 import com.unciv.ui.images.ImageGetter
 import com.unciv.ui.screens.basescreen.BaseScreen
-import com.unciv.ui.screens.civilopediascreen.CivilopediaCategories
-import com.unciv.ui.screens.civilopediascreen.CivilopediaScreen
 import com.unciv.ui.screens.overviewscreen.EmpireOverviewCategories
 import com.unciv.ui.screens.worldscreen.BackgroundActor
 import com.unciv.ui.screens.worldscreen.WorldScreen
@@ -68,6 +67,7 @@ class WorldScreenTopBar(internal val worldScreen: WorldScreen) : Table() {
     private val overviewButton = OverviewAndSupplyTable(worldScreen)
     private val leftFiller: BackgroundActor
     private val rightFiller: BackgroundActor
+    private var baseHeight = 0f
 
     companion object {
         /** When the "fillers" are used, this is added to the required height, alleviating the "gap" problem a little. */
@@ -101,6 +101,8 @@ class WorldScreenTopBar(internal val worldScreen: WorldScreen) : Table() {
         setLayoutEnabled(true)
     }
 
+    internal fun getYForTutorialTask(): Float = y + height - baseHeight
+
     /** Performs the layout tricks mentioned in the class Kdoc */
     private fun updateLayout() {
         val targetWidth = stage.width
@@ -123,7 +125,7 @@ class WorldScreenTopBar(internal val worldScreen: WorldScreen) : Table() {
         add(resourceTable).colspan(3).growX().width(targetWidth).row()
         layout()  // force rowHeight calculation - validate is not enough - Table quirks
         val statsRowHeight = getRowHeight(0)
-        val baseHeight = statsRowHeight + getRowHeight(1)
+        baseHeight = statsRowHeight + getRowHeight(1)
 
         fun addFillers(fillerHeight: Float) {
             add(leftFiller).size(selectedCivWidth, fillerHeight + gapFillingExtraHeight)
@@ -212,17 +214,11 @@ class WorldScreenTopBar(internal val worldScreen: WorldScreen) : Table() {
             padTop((10f - descenderHeight).coerceAtLeast(0f))
 
             menuButton.color = Color.WHITE
-            menuButton.onActivation(binding = KeyboardBinding.Menu) {
-                WorldScreenMenuPopup(worldScreen).open(force = true)
-            }
+            menuButton.onActivation(binding = KeyboardBinding.Menu) { WorldScreenMenuPopup(worldScreen) }
+            menuButton.onRightClick { WorldScreenMenuPopup(worldScreen, true) }
 
             val onNationClick = {
-                val civilopediaScreen = CivilopediaScreen(
-                    worldScreen.selectedCiv.gameInfo.ruleset,
-                    CivilopediaCategories.Nation,
-                    worldScreen.selectedCiv.civName
-                )
-                worldScreen.game.pushScreen(civilopediaScreen)
+                worldScreen.openCivilopedia(worldScreen.selectedCiv.nation.makeLink())
             }
 
             selectedCivLabel.setFontSize(25)

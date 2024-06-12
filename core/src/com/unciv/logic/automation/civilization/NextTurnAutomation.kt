@@ -43,6 +43,7 @@ object NextTurnAutomation {
             if (!civInfo.gameInfo.ruleset.modOptions.hasUnique(UniqueType.DiplomaticRelationshipsCannotChange)) {
                 DiplomacyAutomation.declareWar(civInfo)
                 DiplomacyAutomation.offerPeaceTreaty(civInfo)
+                DiplomacyAutomation.askForHelp(civInfo)
                 DiplomacyAutomation.offerDeclarationOfFriendship(civInfo)
             }
             if (civInfo.gameInfo.isReligionEnabled()) {
@@ -387,7 +388,7 @@ object NextTurnAutomation {
                     continue
                 val buildingToSell = civInfo.gameInfo.ruleset.buildings.values.filter {
                         city.cityConstructions.isBuilt(it.name)
-                        && it.requiresResource(resource, StateForConditionals(civInfo, city))
+                        && it.requiredResources(StateForConditionals(civInfo, city)).contains(resource)
                         && it.isSellable()
                         && !civInfo.civConstructions.hasFreeBuilding(city, it) }
                     .randomOrNull()
@@ -411,7 +412,7 @@ object NextTurnAutomation {
         if (unit.isCivilian() && !unit.isGreatPersonOfType("War")) return 1 // Civilian
         if (unit.baseUnit.isAirUnit()) return when {
             unit.canIntercept() -> 2 // Fighers first
-            unit.baseUnit.isNuclearWeapon() -> 3 // Then Nukes (area damage)
+            unit.isNuclearWeapon() -> 3 // Then Nukes (area damage)
             !unit.hasUnique(UniqueType.SelfDestructs) -> 4 // Then Bombers (reusable)
             else -> 5 // Missiles
         }
@@ -490,10 +491,9 @@ object NextTurnAutomation {
             // Otherwise, AI tries to produce settlers when it can hardly sustain itself
             .filter { city ->
                 !workersBuildableForThisCiv
-                    || city.getCenterTile().getTilesInDistance(2).count { it.improvement!=null } > 1
-                    || city.getCenterTile().getTilesInDistance(3).any { it.civilianUnit?.hasUnique(UniqueType.BuildImprovements)==true }
-            }
-            .maxByOrNull { it.cityStats.currentCityStats.production }
+                    || city.getCenterTile().getTilesInDistance(civInfo.modConstants.cityWorkRange - 1 ).count { it.improvement != null } > 1
+                    || city.getCenterTile().getTilesInDistance(civInfo.modConstants.cityWorkRange).any { it.civilianUnit?.hasUnique(UniqueType.BuildImprovements) == true }
+            }.maxByOrNull { it.cityStats.currentCityStats.production }
             ?: return
         if (bestCity.cityConstructions.getBuiltBuildings().count() > 1) // 2 buildings or more, otherwise focus on self first
             bestCity.cityConstructions.currentConstructionFromQueue = settlerUnits.minByOrNull { it.cost }!!.name

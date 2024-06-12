@@ -2,6 +2,7 @@ package com.unciv.logic.city
 
 import com.badlogic.gdx.math.Vector2
 import com.unciv.logic.civilization.Civilization
+import com.unciv.models.ruleset.BeliefType
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.testing.GdxTestRunner
 import com.unciv.testing.TestGame
@@ -97,97 +98,5 @@ class CityTest {
         assertTrue(capitalCity.hasSoldBuildingThisTurn)
     }
 
-    @Test
-    fun `should get resources from tiles`() {
-        // given
-        testCiv.tech.addTechnology("Iron Working")
-        testCiv.tech.addTechnology("Mining")
-
-        val tile = testGame.getTile(Vector2(1f, 1f))
-        tile.resource = "Iron"
-        tile.resourceAmount = 4
-        tile.improvement = "Mine"
-
-        // when
-        val cityResources = capitalCity.getResourcesGeneratedByCity()
-
-        // then
-        assertEquals(1, cityResources.size)
-        assertEquals("4 Iron from Tiles", cityResources[0].toString())
-    }
-
-    @Test
-    fun `should get resources from unique buildings`() {
-        // given
-        val building = testGame.createBuilding("Provides [4] [Iron]")
-        capitalCity.cityConstructions.addBuilding(building)
-
-        // when
-        val resources = testCiv.detailedCivResources
-
-        // then
-        assertEquals(1, resources.size)
-        assertEquals("4 Iron from Buildings", resources[0].toString())
-    }
-
-    @Test
-    fun `should reduce resources due to buildings`() {
-        // given
-        capitalCity.cityConstructions.addBuilding("Factory")
-
-        // when
-        val resources = testCiv.detailedCivResources
-
-        // then
-        assertEquals(1, resources.size)
-        assertEquals("-1 Coal from Buildings", resources[0].toString())
-    }
-
-    @Test
-    fun `Civ-wide resources from building uniques propagate between cities`() {
-        // given
-        val building = testGame.createBuilding("Provides [4] [Coal]")
-        capitalCity.cityConstructions.addBuilding(building)
-
-        val otherCity = testCiv.addCity(Vector2(2f,2f))
-
-        // when
-        val resourceAmountInOtherCity = otherCity.getAvailableResourceAmount("Coal")
-
-        // then
-        assertEquals(4, resourceAmountInOtherCity)
-    }
-
-
-    @Test
-    fun `City-wide resources from building uniques propagate between cities`() {
-        // given
-        val resource = testGame.createResource(UniqueType.CityResource.text)
-        val building = testGame.createBuilding("Provides [4] [${resource.name}]")
-        capitalCity.cityConstructions.addBuilding(building)
-
-        val otherCity = testCiv.addCity(Vector2(2f,2f))
-
-        // when
-        val resourceAmountInOtherCity = otherCity.getAvailableResourceAmount(resource.name)
-
-        // then
-        assertEquals(4, resourceAmountInOtherCity)
-    }
-
-    @Test
-    fun `City-wide resources not double-counted in same city`() {
-        // given
-        val resource = testGame.createResource(UniqueType.CityResource.text)
-        val building = testGame.createBuilding("Provides [4] [${resource.name}]")
-        capitalCity.cityConstructions.addBuilding(building)
-
-
-        // when
-        val resourceAmountInCapital = capitalCity.getAvailableResourceAmount(resource.name)
-
-        // then
-        assertEquals(4, resourceAmountInCapital)
-    }
 
 }

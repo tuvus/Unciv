@@ -21,12 +21,12 @@ import com.unciv.logic.multiplayer.storage.MultiplayerAuthException
 import com.unciv.logic.trade.TradeEvaluation
 import com.unciv.models.TutorialTrigger
 import com.unciv.models.metadata.GameSetupInfo
+import com.unciv.models.ruleset.Event
 import com.unciv.models.ruleset.tile.ResourceType
+import com.unciv.models.ruleset.unique.StateForConditionals
 import com.unciv.models.ruleset.unique.UniqueType
 import com.unciv.ui.components.extensions.centerX
 import com.unciv.ui.components.extensions.darken
-import com.unciv.ui.components.extensions.toLabel
-import com.unciv.ui.components.input.KeyCharAndCode
 import com.unciv.ui.components.input.KeyShortcutDispatcherVeto
 import com.unciv.ui.components.input.KeyboardBinding
 import com.unciv.ui.components.input.KeyboardPanningListener
@@ -38,7 +38,6 @@ import com.unciv.ui.popups.ToastPopup
 import com.unciv.ui.popups.hasOpenPopups
 import com.unciv.ui.screens.basescreen.BaseScreen
 import com.unciv.ui.screens.cityscreen.CityScreen
-import com.unciv.ui.screens.civilopediascreen.CivilopediaScreen
 import com.unciv.ui.screens.devconsole.DevConsolePopup
 import com.unciv.ui.screens.mainmenuscreen.MainMenuScreen
 import com.unciv.ui.screens.newgamescreen.NewGameScreen
@@ -60,6 +59,7 @@ import com.unciv.ui.screens.worldscreen.status.NextTurnButton
 import com.unciv.ui.screens.worldscreen.status.NextTurnProgress
 import com.unciv.ui.screens.worldscreen.status.StatusButtons
 import com.unciv.ui.screens.worldscreen.topbar.WorldScreenTopBar
+import com.unciv.ui.screens.worldscreen.unit.AutoPlay
 import com.unciv.ui.screens.worldscreen.unit.UnitTable
 import com.unciv.ui.screens.worldscreen.unit.actions.UnitActionsTable
 import com.unciv.utils.Concurrency
@@ -82,6 +82,7 @@ import kotlin.concurrent.timer
  */
 class WorldScreen(
     val gameInfo: GameInfo,
+    val autoPlay: AutoPlay,
     val viewingCiv: Civilization,
     restoreState: RestoreState? = null
 ) : BaseScreen() {
@@ -122,6 +123,7 @@ class WorldScreen(
     private val tutorialTaskTable = Table().apply {
         background = skinStrings.getUiBackground("WorldScreen/TutorialTaskTable", tintColor = skinStrings.skinConfig.baseColor.darken(0.5f))
     }
+    private var tutorialTaskTableHash = 0
 
     private var nextTurnUpdateJob: Job? = null
 
@@ -130,6 +132,7 @@ class WorldScreen(
     private var uiEnabled = true
 
     internal val undoHandler = UndoHandler(this)
+
 
     init {
         // notifications are right-aligned, they take up only as much space as necessary.
@@ -148,10 +151,10 @@ class WorldScreen(
         stage.scrollFocus = mapHolder
         stage.addActor(notificationsScroll)  // very low in z-order, so we're free to let it extend _below_ tile info and minimap if we want
         stage.addActor(minimapWrapper)
+        stage.addActor(tutorialTaskTable)    // behind topBar!
         stage.addActor(topBar)
         stage.addActor(statusButtons)
         stage.addActor(techPolicyAndDiplomacy)
-        stage.addActor(tutorialTaskTable)
 
         stage.addActor(zoomController)
         zoomController.isVisible = UncivGame.Current.settings.showZoomButtons
@@ -166,7 +169,7 @@ class WorldScreen(
 
         val tileToCenterOn: Vector2 =
                 when {
-                    viewingCiv.cities.isNotEmpty() && viewingCiv.getCapital() != null -> viewingCiv.getCapital()!!.location
+                    viewingCiv.getCapital() != null -> viewingCiv.getCapital()!!.location
                     viewingCiv.units.getCivUnits().any() -> viewingCiv.units.getCivUnits().first().getTile().position
                     else -> Vector2.Zero
                 }
@@ -181,15 +184,6 @@ class WorldScreen(
             mapHolder.setCenterPosition(tileToCenterOn, immediately = true, selectUnit = true)
 
         tutorialController.allTutorialsShowedCallback = { shouldUpdate = true }
-
-        globalShortcuts.add(KeyCharAndCode.BACK) { backButtonAndESCHandler() }
-
-
-        globalShortcuts.add(KeyboardBinding.DeveloperConsole) {
-            // No cheating unless you're by yourself
-            if (gameInfo.civilizations.count { it.isHuman() } > 1) return@add
-            val consolePopup = DevConsolePopup(this)
-        }
 
         addKeyboardListener() // for map panning by W,S,A,D
         addKeyboardPresses()  // shortcut keys like F1
@@ -224,6 +218,18 @@ class WorldScreen(
         super.dispose()
     }
 
+    override fun getCivilopediaRuleset() = gameInfo.ruleset
+
+    // Handle disabling and re-enabling WASD listener while Options are open
+    override fun openOptionsPopup(startingPage: Int, withDebug: Boolean, onClose: () -> Unit) {
+        val oldListener = stage.root.listeners.filterIsInstance<KeyboardPanningListener>().firstOrNull()
+        if (oldListener != null) stage.removeListener(oldListener)
+        super.openOptionsPopup(startingPage, withDebug) {
+            addKeyboardListener()
+            onClose()
+        }
+    }
+
     fun openEmpireOverview(category: EmpireOverviewCategories? = null) {
         game.pushScreen(EmpireOverviewScreen(selectedCiv, category))
     }
@@ -242,9 +248,11 @@ class WorldScreen(
     }
 
     private fun addKeyboardPresses() {
+        globalShortcuts.add(KeyboardBinding.DeselectOrQuit) { backButtonAndESCHandler() }
+
         // Space and N are assigned in NextTurnButton constructor
         // Functions that have a big button are assigned there (WorldScreenTopBar, TechPolicyDiplomacyButtons..)
-        globalShortcuts.add(KeyboardBinding.Civilopedia) { game.pushScreen(CivilopediaScreen(gameInfo.ruleset)) }
+        globalShortcuts.add(KeyboardBinding.Civilopedia) { openCivilopedia() }
         globalShortcuts.add(KeyboardBinding.EmpireOverviewTrades) { openEmpireOverview(EmpireOverviewCategories.Trades) }
         globalShortcuts.add(KeyboardBinding.EmpireOverviewUnits) { openEmpireOverview(EmpireOverviewCategories.Units) }
         globalShortcuts.add(KeyboardBinding.EmpireOverviewPolitics) { openEmpireOverview(EmpireOverviewCategories.Politics) }
@@ -276,16 +284,14 @@ class WorldScreen(
         globalShortcuts.add(KeyboardBinding.ToggleYieldDisplay) { minimapWrapper.yieldImageButton.toggle() }
         globalShortcuts.add(KeyboardBinding.ToggleWorkedTilesDisplay) { minimapWrapper.populationImageButton.toggle() }
         globalShortcuts.add(KeyboardBinding.ToggleMovementDisplay) { minimapWrapper.movementsImageButton.toggle() }
+
+        globalShortcuts.add(KeyboardBinding.DeveloperConsole, action = ::openDeveloperConsole)
     }
 
-    // Handle disabling and re-enabling WASD listener while Options are open
-    override fun openOptionsPopup(startingPage: Int, withDebug: Boolean, onClose: () -> Unit) {
-        val oldListener = stage.root.listeners.filterIsInstance<KeyboardPanningListener>().firstOrNull()
-        if (oldListener != null) stage.removeListener(oldListener)
-        super.openOptionsPopup(startingPage, withDebug) {
-            addKeyboardListener()
-            onClose()
-        }
+    fun openDeveloperConsole() {
+        // No cheating unless you're by yourself
+        if (gameInfo.civilizations.count { it.isHuman() } > 1) return
+        val consolePopup = DevConsolePopup(this)
     }
 
     private fun toggleUI() {
@@ -330,7 +336,7 @@ class WorldScreen(
             launchOnGLThread {
                 loadingGamePopup.close()
             }
-            startNewScreenJob(latestGame)
+            startNewScreenJob(latestGame, autoPlay)
         } catch (ex: Throwable) {
             launchOnGLThread {
                 val (message) = LoadGameScreen.getLoadExceptionMessage(ex, "Couldn't download the latest game state!")
@@ -397,6 +403,8 @@ class WorldScreen(
         else mapHolder.updateTiles(viewingCiv)
 
         topBar.update(selectedCiv)
+        if (tutorialTaskTable.isVisible)
+            tutorialTaskTable.y = topBar.getYForTutorialTask() - tutorialTaskTable.height
 
         if (techPolicyAndDiplomacy.update())
             displayTutorial(TutorialTrigger.OtherCivEncountered)
@@ -408,19 +416,18 @@ class WorldScreen(
         }
 
         // If the game has ended, lets stop AutoPlay
-        if (game.settings.autoPlay.isAutoPlaying()
-            && !gameInfo.oneMoreTurnMode && (viewingCiv.isDefeated() || gameInfo.checkForVictory())) {
-            game.settings.autoPlay.stopAutoPlay()
+        if (autoPlay.isAutoPlaying() && !gameInfo.oneMoreTurnMode && (viewingCiv.isDefeated() || gameInfo.checkForVictory())) {
+            autoPlay.stopAutoPlay()
         }
 
-        if (!hasOpenPopups() && !game.settings.autoPlay.isAutoPlaying() && isPlayersTurn) {
+        if (!hasOpenPopups() && !autoPlay.isAutoPlaying() && isPlayersTurn) {
             when {
                 viewingCiv.shouldShowDiplomaticVotingResults() ->
                     UncivGame.Current.pushScreen(DiplomaticVoteResultScreen(gameInfo.diplomaticVictoryVotesCast, viewingCiv))
                 !gameInfo.oneMoreTurnMode && (viewingCiv.isDefeated() || gameInfo.checkForVictory()) ->
                     game.pushScreen(VictoryScreen(this))
                 viewingCiv.greatPeople.freeGreatPeople > 0 ->
-                    game.pushScreen(GreatPersonPickerScreen(viewingCiv))
+                    game.pushScreen(GreatPersonPickerScreen(this, viewingCiv))
                 viewingCiv.popupAlerts.any() -> AlertPopup(this, viewingCiv.popupAlerts.first())
                 viewingCiv.tradeRequests.isNotEmpty() -> {
                     // In the meantime this became invalid, perhaps because we accepted previous trades
@@ -447,50 +454,16 @@ class WorldScreen(
         zoomController.setPosition(stage.width - posZoomFromRight - 10f, 10f, Align.bottomRight)
     }
 
-    private fun getCurrentTutorialTask(): String {
-        val completedTasks = game.settings.tutorialTasksCompleted
-        if (!completedTasks.contains("Move unit"))
-            return "Move a unit!\nClick on a unit > Click on a destination > Click the arrow popup"
-        if (!completedTasks.contains("Found city"))
-            return "Found a city!\nSelect the Settler (flag unit) > Click on 'Found city' (bottom-left corner)"
-        if (!completedTasks.contains("Enter city screen"))
-            return "Enter the city screen!\nClick the city button twice"
-        if (!completedTasks.contains("Pick technology"))
-            return "Pick a technology to research!\nClick on the tech button (greenish, top left) > " +
-                    "\n select technology > click 'Research' (bottom right)"
-        if (!completedTasks.contains("Pick construction"))
-            return "Pick a construction!\nEnter city screen > Click on a unit or building (bottom left side) >" +
-                    " \n click 'add to queue'"
-        if (!completedTasks.contains("Pass a turn"))
-            return "Pass a turn!\nCycle through units with 'Next unit' > Click 'Next turn'"
-        if (!completedTasks.contains("Reassign worked tiles"))
-            return "Reassign worked tiles!\nEnter city screen > click the assigned (green) tile to unassign > " +
-                    "\n click an unassigned tile to assign population"
-        if (!completedTasks.contains("Meet another civilization"))
-            return "Meet another civilization!\nExplore the map until you encounter another civilization!"
-        if (!completedTasks.contains("Open the options table"))
-            return "Open the options table!\nClick the menu button (top left) > click 'Options'"
-        if (!completedTasks.contains("Construct an improvement"))
-            return "Construct an improvement!\nConstruct a Worker unit > Move to a Plains or Grassland tile > " +
-                    "\n Click 'Construct improvement' (above the unit table, bottom left)" +
-                    "\n > Choose the farm > \n Leave the worker there until it's finished"
-        if (!completedTasks.contains("Create a trade route")
-                && viewingCiv.cache.citiesConnectedToCapitalToMediums.any { it.key.civ == viewingCiv })
-            game.settings.addCompletedTutorialTask("Create a trade route")
-        if (viewingCiv.cities.size > 1 && !completedTasks.contains("Create a trade route"))
-            return "Create a trade route!\nConstruct roads between your capital and another city" +
-                    "\nOr, automate your worker and let him get to that eventually"
-        if (viewingCiv.isAtWar() && !completedTasks.contains("Conquer a city"))
-            return "Conquer a city!\nBring an enemy city down to low health > " +
-                    "\nEnter the city with a melee unit"
-        if (viewingCiv.units.getCivUnits().any { it.baseUnit.movesLikeAirUnits() } && !completedTasks.contains("Move an air unit"))
-            return "Move an air unit!\nSelect an air unit > select another city within range > " +
-                    "\nMove the unit to the other city"
-        if (!completedTasks.contains("See your stats breakdown"))
-            return "See your stats breakdown!\nEnter the Overview screen (top right corner) >" +
-                    "\nClick on 'Stats'"
-
-        return ""
+    private fun getCurrentTutorialTask(): Event? {
+        if (!game.settings.tutorialTasksCompleted.contains("Create a trade route")) {
+            if (viewingCiv.cache.citiesConnectedToCapitalToMediums.any { it.key.civ == viewingCiv })
+                game.settings.addCompletedTutorialTask("Create a trade route")
+        }
+        val stateForConditionals = StateForConditionals(viewingCiv)
+        return gameInfo.ruleset.events.values.firstOrNull {
+            it.presentation == Event.Presentation.Floating &&
+                it.isAvailable(stateForConditionals)
+        }
     }
 
     private fun displayTutorialsOnUpdate() {
@@ -521,27 +494,38 @@ class WorldScreen(
     }
 
     private fun displayTutorialTaskOnUpdate() {
-        tutorialTaskTable.clear()
-        val tutorialTask = getCurrentTutorialTask()
-        if (tutorialTask == "" || !game.settings.showTutorials || viewingCiv.isDefeated()) {
+        fun setInvisible() {
             tutorialTaskTable.isVisible = false
-            return
+            tutorialTaskTable.clear()
+            tutorialTaskTableHash = 0
         }
+        if (!game.settings.showTutorials || viewingCiv.isDefeated()) return setInvisible()
+        val tutorialTask = getCurrentTutorialTask() ?: return setInvisible()
 
-        tutorialTaskTable.isVisible = true
         if (!UncivGame.Current.isTutorialTaskCollapsed) {
-            tutorialTaskTable.add(tutorialTask.toLabel()
-                .apply { setAlignment(Align.center) }).pad(10f)
+            val hash = tutorialTask.hashCode()  // Default implementation is OK - we see the same instance or not
+            if (hash != tutorialTaskTableHash) {
+                val renderEvent = RenderEvent(tutorialTask, this) {
+                    shouldUpdate = true
+                }
+                if (!renderEvent.isValid) return setInvisible()
+                tutorialTaskTable.clear()
+                tutorialTaskTable.add(renderEvent).pad(10f)
+                tutorialTaskTableHash = hash
+            }
         } else {
-            tutorialTaskTable.add(ImageGetter.getImage("CityStateIcons/Cultured").apply { setSize(30f,30f) }).pad(5f)
+            tutorialTaskTable.clear()
+            tutorialTaskTable.add(ImageGetter.getImage("OtherIcons/HiddenTutorialTask").apply { setSize(30f,30f) }).pad(5f)
+            tutorialTaskTableHash = 0
         }
         tutorialTaskTable.pack()
         tutorialTaskTable.centerX(stage)
-        tutorialTaskTable.y = topBar.y - tutorialTaskTable.height
+        tutorialTaskTable.y = topBar.getYForTutorialTask() - tutorialTaskTable.height
         tutorialTaskTable.onClick {
             UncivGame.Current.isTutorialTaskCollapsed = !UncivGame.Current.isTutorialTaskCollapsed
             displayTutorialTaskOnUpdate()
         }
+        tutorialTaskTable.isVisible = true
     }
 
     private fun updateSelectedCiv() {
@@ -650,7 +634,7 @@ class WorldScreen(
 
             progressBar.increment()
 
-            startNewScreenJob(gameInfoClone)
+            startNewScreenJob(gameInfoClone, autoPlay)
         }
     }
 
@@ -703,7 +687,7 @@ class WorldScreen(
         } else {
             if (!game.settings.autoPlay.showAutoPlayButton) {
                 statusButtons.autoPlayStatusButton = null
-                game.settings.autoPlay.stopAutoPlay()
+                autoPlay.stopAutoPlay()
             }
         }
     }
@@ -727,7 +711,7 @@ class WorldScreen(
         resizeDeferTimer = timer("Resize", daemon = true, 500L, Long.MAX_VALUE) {
             resizeDeferTimer?.cancel()
             resizeDeferTimer = null
-            startNewScreenJob(gameInfo, true) // start over
+            startNewScreenJob(gameInfo, autoPlay, true) // start over
         }
     }
 
@@ -792,6 +776,12 @@ class WorldScreen(
             return
         }
 
+        if (bottomUnitTable.selectedSpy != null) {
+            bottomUnitTable.selectSpy(null)
+            shouldUpdate = true
+            return
+        }
+
         game.popScreen()
     }
 
@@ -807,10 +797,10 @@ class WorldScreen(
 }
 
 /** This exists so that no reference to the current world screen remains, so the old world screen can get garbage collected during [UncivGame.loadGame]. */
-private fun startNewScreenJob(gameInfo: GameInfo, autosaveDisabled: Boolean = false) {
+private fun startNewScreenJob(gameInfo: GameInfo, autoPlay: AutoPlay, autosaveDisabled: Boolean = false) {
     Concurrency.run {
         val newWorldScreen = try {
-            UncivGame.Current.loadGame(gameInfo)
+            UncivGame.Current.loadGame(gameInfo, autoPlay)
         } catch (notAPlayer: UncivShowableException) {
             withGLContext {
                 val (message) = LoadGameScreen.getLoadExceptionMessage(notAPlayer)

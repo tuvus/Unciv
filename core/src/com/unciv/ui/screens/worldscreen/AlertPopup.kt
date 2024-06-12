@@ -103,6 +103,7 @@ class AlertPopup(
             AlertType.BulliedProtectedMinor, AlertType.AttackedProtectedMinor -> addBulliedOrAttackedProtectedMinor()
             AlertType.RecapturedCivilian -> skipThisAlert = addRecapturedCivilian()
             AlertType.GameHasBeenWon -> addGameHasBeenWon()
+            AlertType.Event -> skipThisAlert = !addEvent()
         }
         if (!skipThisAlert) open()
     }
@@ -495,6 +496,15 @@ class AlertPopup(
         } else {
             addGoodSizedLabel("Original capitals and holy cities cannot be razed.").row()
         }
+    }
+
+    /** Returns if event was triggered correctly */
+    private fun addEvent(): Boolean {
+        val event = gameInfo.ruleset.events[popupAlert.value] ?: return false
+        val render = RenderEvent(event, worldScreen) { close() }
+        if (!render.isValid) return false
+        add(render).pad(0f).row()
+        return true
     }
 
     //endregion
