@@ -157,7 +157,11 @@ class TradeLogic(val ourCivilization: Civilization, val otherCivilization: Civil
             // Must evaluate before moving, or else cities have already moved and we get an exception
             val ourGoldValueOfTrade = TradeEvaluation().getTradeAcceptability(currentTrade, ourCivilization, otherCivilization, includeDiplomaticGifts = false)
             val theirGoldValueOfTrade = TradeEvaluation().getTradeAcceptability(currentTrade.reverse(), otherCivilization, ourCivilization, includeDiplomaticGifts = false)
-            if (ourGoldValueOfTrade > theirGoldValueOfTrade) {
+            if (ourGoldValueOfTrade < 0 && theirGoldValueOfTrade < 0) {
+                // Both sides have offered something with negative value
+                // This is most likely be a team war trade
+                // In this case, neither side should be giving or get any gifts
+            } else if (ourGoldValueOfTrade > theirGoldValueOfTrade) {
                 ourDiploManager.giftGold(ourGoldValueOfTrade - theirGoldValueOfTrade.coerceAtLeast(0))
             } else if (theirGoldValueOfTrade > ourGoldValueOfTrade) {
                 theirDiploManger.giftGold(theirGoldValueOfTrade - ourGoldValueOfTrade.coerceAtLeast(0))
